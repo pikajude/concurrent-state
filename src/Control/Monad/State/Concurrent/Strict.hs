@@ -19,6 +19,9 @@ module Control.Monad.State.Concurrent.Strict (
     -- *** The StateC monad transformer
     StateC,
 
+    -- *** Specializations of MonadState operations
+    modify,
+
     -- *** Concurrent state operations
     runStateC, evalStateC, execStateC,
 
@@ -30,7 +33,7 @@ import Control.Applicative
 import Control.Arrow (first)
 import Control.Concurrent.STM
 import Control.Monad
-import Control.Monad.State
+import Control.Monad.State hiding (modify)
 
 -- ---------------------------------------------------------------------------
 -- | A concurrent state transformer monad parameterized by:
@@ -89,6 +92,18 @@ instance MonadIO m => MonadIO (StateC s m) where
     liftIO i = StateC $ \s -> do
         a <- liftIO i
         return (a, s)
+
+-- | Monadic state transformer. Maps an old state to a new state inside
+-- a state monad. The old state is thrown away.
+--
+-- This is provided because "Control.Monad.State"'s modify function is
+-- defined in terms of 'get' and 'put', which results in two STM actions
+-- for every modify. Instead, 'modify' can be specialized as a call to
+-- 'modifyTVar''.
+modify :: MonadIO m => (s -> s) -> StateC s m ()
+modify s = StateC $ \tv -> do
+    liftIO . atomically $ modifyTVar' tv s
+    return ((), tv)
 
 -- | Unwrap a concurrent state monad computation as a function.
 runStateC :: MonadIO m
