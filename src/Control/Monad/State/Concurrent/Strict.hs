@@ -23,7 +23,7 @@ module Control.Monad.State.Concurrent.Strict (
     runStateC, evalStateC, execStateC,
 
     -- *** Lifting other operations
-    liftCallCCC, liftCallCCC', liftCatch, liftListen, liftPass
+    liftCallCCC, liftCallCCC', liftCatchC, liftListenC, liftPassC
 ) where
 
 import Control.Applicative
@@ -138,21 +138,21 @@ liftCallCCC' callCC f = StateC $ \tv ->
         _runStateC (f (\a -> StateC $ \s' -> c (a, s'))) tv
 
 -- | Lift a @catchError@ operation to the new monad.
-liftCatch :: (m (a, TVar s) -> (e -> m (a, TVar s)) -> m (a, TVar s)) ->
+liftCatchC :: (m (a, TVar s) -> (e -> m (a, TVar s)) -> m (a, TVar s)) ->
     StateC s m a -> (e -> StateC s m a) -> StateC s m a
-liftCatch catchError m h =
+liftCatchC catchError m h =
     StateC $ \s -> _runStateC m s `catchError` \e -> _runStateC (h e) s
 
 -- | Lift a @listen@ operation to the new monad.
-liftListen :: Monad m =>
+liftListenC :: Monad m =>
     (m (a, TVar s) -> m ((a, TVar s), w)) -> StateC s m a -> StateC s m (a,w)
-liftListen listen m = StateC $ \tv -> do
+liftListenC listen m = StateC $ \tv -> do
     ((a, s'), w) <- listen (_runStateC m tv)
     return ((a, w), s')
 
 -- | Lift a @pass@ operation to the new monad.
-liftPass :: Monad m =>
+liftPassC :: Monad m =>
     (m ((a, TVar s), b) -> m (a, TVar s)) -> StateC s m (a, b) -> StateC s m a
-liftPass pass m = StateC $ \tv -> pass $ do
+liftPassC pass m = StateC $ \tv -> pass $ do
     ((a, f), s') <- _runStateC m tv
     return ((a, s'), f)
