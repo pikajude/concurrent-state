@@ -28,7 +28,9 @@ module Control.Monad.State.Concurrent.Lazy (
 
 import Control.Applicative
 import Control.Concurrent.STM
+import Control.Exception (throwIO)
 import Control.Monad
+import Control.Monad.Catch
 import Control.Monad.State
 
 -- ---------------------------------------------------------------------------
@@ -89,6 +91,15 @@ instance MonadIO m => MonadIO (StateC s m) where
     liftIO i = StateC $ \s -> do
         a <- liftIO i
         return (a, s)
+
+instance (MonadIO m, MonadCatch m) => MonadCatch (StateC s m) where
+    throwM = liftIO . throwIO
+    catch = liftCatchC catch
+    mask a = StateC $ \tv -> mask $ \u -> _runStateC (a $ q u) tv where
+        q u (StateC f) = StateC (u . f)
+    uninterruptibleMask a =
+        StateC $ \tv -> uninterruptibleMask $ \u -> _runStateC (a $ q u) tv where
+        q u (StateC f) = StateC (u . f)
 
 -- | Unwrap a concurrent state monad computation as a function.
 runStateC :: MonadIO m

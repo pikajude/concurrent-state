@@ -15,7 +15,7 @@ library
   exposed-modules:     Control.Monad.State.Concurrent
                        Control.Monad.State.Concurrent.Lazy
                        Control.Monad.State.Concurrent.Strict
-  build-depends:       base >=4.6 && <4.7, mtl >= 2.1, stm, transformers
+  build-depends:       base >=4.6 && <4.7, exceptions >= 0.3, mtl >= 2.1, stm, transformers
   hs-source-dirs:      src
   default-language:    Haskell2010
 
