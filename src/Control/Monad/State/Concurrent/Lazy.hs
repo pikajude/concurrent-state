@@ -77,12 +77,13 @@ instance MonadIO m => Monad (StateC s m) where
         _runStateC (k a) s'
 
 instance (Functor m, MonadIO m) => MonadState s (StateC s m) where
-    get = StateC $ \s -> do
-        m <- liftIO (readTVarIO s)
-        return (m, s)
-    put s = StateC $ \tv -> do
-        liftIO . atomically $ swapTVar tv s
-        return ((), tv)
+    state f = StateC $ \tv -> do
+        newval <- liftIO . atomically $ do
+            old <- readTVar tv
+            let ~(a, s) = f old
+            swapTVar tv s
+            return a
+        return (newval, tv)
 
 instance (MonadIO m, MonadFix m) => MonadFix (StateC s m) where
     mfix f = StateC $ \s -> mfix $ \ ~(a, _) -> _runStateC (f a) s
