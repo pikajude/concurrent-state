@@ -1,0 +1,34 @@
+0.3.3.1
+-------
+* Add changelog
+
+0.3.3.0
+-------
+* Add instances for exceptions' MonadCatch
+
+0.3.2.0
+-------
+* Remove redundant `modify' definition
+
+0.3.1.1
+-------
+* Constrain `mtl' to recent versions with `state' as a MonadState instance
+method
+
+0.3.1.0
+-------
+* Provide `state' for instance instead of `get'/`put' - makes every state
+operation atomic, including `modify'
+
+0.3.0.0
+-------
+* Specialize `modify' to perform one STM operation
+
+0.2.0.0
+-------
+* Strict and lazy versions
+* Suffix C on liftCatch, liftListen, liftPass
+
+0.1.0.0
+-------
+* Initial release, provides Control.Monad.State.Concurrent
