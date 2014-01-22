@@ -1,5 +1,5 @@
 name:                concurrent-state
-version:             0.3.3.1
+version:             0.3.3.2
 synopsis:            MTL-like library using TVars
 description:         State backed by TVar.
 homepage:            https://github.com/joelteon/concurrent-state
@@ -10,6 +10,7 @@ maintainer:          me@joelt.io
 category:            Control
 build-type:          Simple
 cabal-version:       >=1.10
+extra-source-files:  changelog
 
 library
   exposed-modules:     Control.Monad.State.Concurrent
