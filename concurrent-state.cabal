@@ -1,7 +1,7 @@
 name:                concurrent-state
-version:             0.3.1.1
+version:             0.3.2.0
 synopsis:            MTL-like library using TVars
-description:         State and Writer backed by TVars.
+description:         State backed by TVar.
 homepage:            https://github.com/joelteon/concurrent-state
 license:             MIT
 license-file:        LICENSE
