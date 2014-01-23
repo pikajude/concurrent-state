@@ -16,7 +16,6 @@
 -----------------------------------------------------------------------------
 module Control.Monad.State.Concurrent.Strict (
     module Control.Monad.State,
-    module Control.Concurrent.Lifted.Fork,
     -- *** The StateC monad transformer
     StateC,
 
@@ -27,7 +26,7 @@ module Control.Monad.State.Concurrent.Strict (
     runStatesC, evalStatesC, execStatesC,
 
     -- *** Lifting other operations
-    liftCallCCC, liftCallCCC', liftCatchC, liftListenC, liftPassC
+    liftCallCCC, liftCatchC, liftListenC, liftPassC
 ) where
 
 import Control.Applicative
@@ -113,10 +112,11 @@ instance MonadFork m => MonadFork (StateC s m) where
     forkOn i = liftFork (forkOn i)
     forkOS = liftFork forkOS
 
-liftFork :: Monad m => (m r -> m a) -> StateC t m r -> StateC t m a
+liftFork :: Monad m => (m () -> m a) -> StateC t m () -> StateC t m a
 liftFork f (StateC m) = StateC $ \tv -> do
-    tid <- f (liftM fst $ m tv)
+    tid <- f . voidM $ m tv
     return (tid, tv)
+    where voidM = (>> return ())
 
 -- | Unwrap a concurrent state monad computation as a function.
 runStateC :: MonadIO m
@@ -148,22 +148,12 @@ execStateC :: MonadIO m
            -> m s -- ^ final state
 execStateC m s = liftM snd $ runStateC m s
 
--- | Uniform lifting of a @callCC@ operation to the new monad. This version
--- rolls back to the original 'TVar' upon entering the continuation.
+-- | Uniform lifting of a @callCC@ operation to the new monad.
 liftCallCCC :: ((((a, TVar s) -> m (b, TVar s)) -> m (a, TVar s)) -> m (a, TVar s)) ->
     ((a -> StateC s m b) -> StateC s m a) -> StateC s m a
 liftCallCCC callCC f = StateC $ \tv ->
     callCC $ \c ->
         _runStateC (f (\a -> StateC $ \_ -> c (a, tv))) tv
-
--- | In-situ lifting of a @callCC@ operation to the new monad. This version
--- uses the current 'TVar' upon entering the continuation. It does not
--- satisfy the laws of a monad transformer.
-liftCallCCC' :: ((((a, TVar s) -> m (b, TVar s)) -> m (a, TVar s))-> m (a, TVar s)) ->
-    ((a -> StateC s m b) -> StateC s m a) -> StateC s m a
-liftCallCCC' callCC f = StateC $ \tv ->
-    callCC $ \c ->
-        _runStateC (f (\a -> StateC $ \s' -> c (a, s'))) tv
 
 -- | Lift a @catchError@ operation to the new monad.
 liftCatchC :: (m (a, TVar s) -> (e -> m (a, TVar s)) -> m (a, TVar s)) ->

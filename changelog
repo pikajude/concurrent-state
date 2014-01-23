@@ -1,3 +1,9 @@
+0.5.0.0
+-------
+* Add RWSC
+* Remove liftCallCCC', since the difference between it and liftCallCCC is
+indistinguishable in this library
+
 0.4.2.0
 -------
 * Remove MonadCatch constraint from MonadFork
