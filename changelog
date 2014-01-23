@@ -1,3 +1,7 @@
+0.4.1.0
+-------
+* Add forkWithUnmask, forkOnWithUnmask to Control.Concurrent.Lifted.Fork
+
 0.4.0.0
 -------
 * MonadFork (adds `exceptions' dependency)
