@@ -10,7 +10,9 @@
 -----------------------------------------------------------------------------
 module Control.Concurrent.Lifted.Fork (
     MonadFork(..),
-    forkFinally
+    forkFinally,
+    forkWithUnmask,
+    forkOnWithUnmask
 ) where
 
 import qualified Control.Concurrent as C
@@ -37,3 +39,11 @@ instance MonadFork m => MonadFork (ReaderT r m) where
 forkFinally :: MonadFork m => m a -> (Either SomeException a -> m ()) -> m C.ThreadId
 forkFinally action andThen = mask $ \restore ->
     fork $ try (restore action) >>= andThen
+
+-- | Generalized 'C.forkIOWithUnmask'.
+forkWithUnmask :: MonadFork m => ((forall a. m a -> m a) -> m ()) -> m C.ThreadId
+forkWithUnmask = fork . mask
+
+-- | Generalized 'C.forkOnWithUnmask'.
+forkOnWithUnmask :: MonadFork m => Int -> ((forall a. m a -> m a) -> m ()) -> m C.ThreadId
+forkOnWithUnmask i = forkOn i . mask
