@@ -108,15 +108,14 @@ instance (MonadIO m, MonadCatch m) => MonadCatch (StateC s m) where
         q u (StateC f) = StateC (u . f)
 
 instance MonadFork m => MonadFork (StateC s m) where
-    fork (StateC m) = StateC $ \tv -> do
-        tid <- fork (liftM fst $ m tv)
-        return (tid, tv)
-    forkOn i (StateC m) = StateC $ \tv -> do
-        tid <- forkOn i (liftM fst $ m tv)
-        return (tid, tv)
-    forkOS (StateC m) = StateC $ \tv -> do
-        tid <- forkOS (liftM fst $ m tv)
-        return (tid, tv)
+    fork = liftFork fork
+    forkOn i = liftFork (forkOn i)
+    forkOS = liftFork forkOS
+
+liftFork :: Monad m => (m r -> m a) -> StateC t m r -> StateC t m a
+liftFork f (StateC m) = StateC $ \tv -> do
+    tid <- f (liftM fst $ m tv)
+    return (tid, tv)
 
 -- | Unwrap a concurrent state monad computation as a function.
 runStateC :: MonadIO m
