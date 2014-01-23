@@ -1,3 +1,7 @@
+0.4.2.0
+-------
+* Remove MonadCatch constraint from MonadFork
+
 0.4.1.0
 -------
 * Add forkWithUnmask, forkOnWithUnmask to Control.Concurrent.Lifted.Fork
