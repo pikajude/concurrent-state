@@ -16,11 +16,15 @@
 -----------------------------------------------------------------------------
 module Control.Monad.State.Concurrent.Strict (
     module Control.Monad.State,
+    module Control.Concurrent.Lifted.Fork,
     -- *** The StateC monad transformer
     StateC,
 
     -- *** Concurrent state operations
     runStateC, evalStateC, execStateC,
+
+    -- *** Running concurrent operations on a single input
+    runStatesC, evalStatesC, execStatesC,
 
     -- *** Lifting other operations
     liftCallCCC, liftCallCCC', liftCatchC, liftListenC, liftPassC
@@ -28,6 +32,8 @@ module Control.Monad.State.Concurrent.Strict (
 
 import Control.Applicative
 import Control.Arrow (first)
+import Control.Concurrent.Lifted.Fork
+import Control.Concurrent.MVar
 import Control.Concurrent.STM
 import Control.Exception (throwIO)
 import Control.Monad
@@ -102,6 +108,17 @@ instance (MonadIO m, MonadCatch m) => MonadCatch (StateC s m) where
         StateC $ \tv -> uninterruptibleMask $ \u -> _runStateC (a $ q u) tv where
         q u (StateC f) = StateC (u . f)
 
+instance MonadFork m => MonadFork (StateC s m) where
+    fork (StateC m) = StateC $ \tv -> do
+        tid <- fork (liftM fst $ m tv)
+        return (tid, tv)
+    forkOn i (StateC m) = StateC $ \tv -> do
+        tid <- forkOn i (liftM fst $ m tv)
+        return (tid, tv)
+    forkOS (StateC m) = StateC $ \tv -> do
+        tid <- forkOS (liftM fst $ m tv)
+        return (tid, tv)
+
 -- | Unwrap a concurrent state monad computation as a function.
 runStateC :: MonadIO m
           => StateC s m a -- ^ state-passing computation to execute
@@ -168,3 +185,39 @@ liftPassC :: Monad m =>
 liftPassC pass m = StateC $ \tv -> pass $ do
     ((a, f), s') <- _runStateC m tv
     return ((a, s'), f)
+
+-- | Run multiple state operations on the same value, returning the
+-- resultant state and the value produced by each operation.
+runStatesC :: MonadFork m
+           => [StateC s m a] -- ^ state-passing computations to execute
+           -> s -- ^ initial state
+           -> m ([a], s) -- ^ return values and final state
+runStatesC ms s = do
+    v <- liftIO $ newTVarIO s
+    mvs <- mapM (const (liftIO newEmptyMVar)) ms
+    forM_ (zip mvs ms) $ \(mv, operation) -> fork $ do
+        res <- evalStateC operation v
+        liftIO $ putMVar mv res
+    items <- forM mvs (liftIO . takeMVar)
+    end <- liftIO $ readTVarIO v
+    return (items, end)
+
+-- | Run multiple state operations on the same value, returning all values
+-- produced by each operation.
+--
+-- * @'evalStatesC' ms s = 'liftM' 'fst' ('runStatesC' ms s)@
+evalStatesC :: MonadFork m
+            => [StateC s m a] -- ^ state-passing computations to execute
+            -> s -- ^ initial state
+            -> m [a] -- ^ return values
+evalStatesC ms s = liftM fst $ runStatesC ms s
+
+-- | Run multiple state operations on the same value, returning the
+-- resultant state.
+--
+-- * @'execStatesC' ms s = 'liftM' 'snd' ('runStatesC' ms s)@
+execStatesC :: MonadFork m
+            => [StateC s m a] -- ^ state-passing computations to execute
+            -> s -- ^ initial state
+            -> m s -- ^ final state
+execStatesC ms s = liftM snd $ runStatesC ms s

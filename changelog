@@ -1,3 +1,8 @@
+0.4.0.0
+-------
+* MonadFork (adds `exceptions' dependency)
+* Helpers for running concurrent operations on one input
+
 0.3.3.2
 -------
 * Add changelog to tarball
