@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TupleSections #-}
@@ -38,6 +39,9 @@ import Control.Exception (throwIO)
 import Control.Monad
 import Control.Monad.Catch
 import Control.Monad.State
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
+import Prelude hiding (catch)
+#endif
 
 -- ---------------------------------------------------------------------------
 -- | A concurrent state transformer monad parameterized by:

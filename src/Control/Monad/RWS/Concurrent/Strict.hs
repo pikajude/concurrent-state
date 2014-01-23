@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
@@ -29,6 +30,9 @@ import Control.Concurrent.STM
 import Control.Exception (throwIO)
 import Control.Monad.Catch
 import Control.Monad.RWS
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
+import Prelude hiding (catch)
+#endif
 
 -- ---------------------------------------------------------------------------
 -- | A concurrent monad transformer reading an environment of type @r@,
