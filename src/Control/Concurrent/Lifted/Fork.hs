@@ -17,6 +17,7 @@ module Control.Concurrent.Lifted.Fork (
 
 import qualified Control.Concurrent as C
 import           Control.Monad.Catch
+import           Control.Monad.Trans.Identity
 import           Control.Monad.Reader
 
 -- | Generalize 'forkIO' to 'MonadIO'.
@@ -29,6 +30,11 @@ instance MonadFork IO where
     fork = C.forkIO
     forkOn = C.forkOn
     forkOS = C.forkOS
+
+instance MonadFork m => MonadFork (IdentityT m) where
+    fork (IdentityT m) = IdentityT (fork m)
+    forkOn i (IdentityT m) = IdentityT (forkOn i m)
+    forkOS (IdentityT m) = IdentityT (forkOS m)
 
 instance MonadFork m => MonadFork (ReaderT r m) where
     fork (ReaderT m) = ReaderT (fork . m)

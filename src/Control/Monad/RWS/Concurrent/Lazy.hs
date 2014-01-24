@@ -122,7 +122,7 @@ instance (MonadIO m, MonadCatch m) => MonadCatch (RWSC r w s m) where
 
 instance (Monoid w, MonadIO m, MonadReader r m, MonadWriter w m, MonadState s m) => MonadRWS r w s (RWSC r w s m)
 
-instance MonadFork m => MonadFork (RWSC r w s m) where
+instance (Monoid w, MonadFork m) => MonadFork (RWSC r w s m) where
     fork = liftFork fork
     forkOn i = liftFork (forkOn i)
     forkOS = liftFork forkOS
