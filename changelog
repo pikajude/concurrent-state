@@ -1,3 +1,7 @@
+0.5.1.1
+-------
+* Specialize `get' for StateC and RWSC to avoid an STM transaction
+
 0.5.1.0
 -------
 * Remove `Monoid w` constraint from MonadFork instances for RWS

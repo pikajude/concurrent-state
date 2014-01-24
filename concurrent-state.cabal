@@ -1,5 +1,5 @@
 name:                concurrent-state
-version:             0.5.1.0
+version:             0.5.1.1
 synopsis:            MTL-like library using TVars
 description:         State, RWS backed by TVar.
 homepage:            https://github.com/joelteon/concurrent-state
