@@ -1,3 +1,7 @@
+0.5.1.0
+-------
+* Remove `Monoid w` constraint from MonadFork instances for RWS
+
 0.5.0.1
 -------
 * Support GHC 7.4.2
