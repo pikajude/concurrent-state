@@ -1,3 +1,8 @@
+0.5.1.2
+-------
+* Add a concurrent chat server example
+* Install with -fexamples to enable example binaries
+
 0.5.1.1
 -------
 * Specialize `get' for StateC and RWSC to avoid an STM transaction
