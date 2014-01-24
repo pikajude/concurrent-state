@@ -41,7 +41,9 @@ main = do
     tv <- newTVarIO $ ServerState 0 []
     flip evalStateC tv $ forever $ do
         (ch, _, _) <- liftIO $ accept server
-        i <- nextClientId
-        let client = Client i ch
-        modify (\serverState -> serverState { clients = client : clients serverState })
-        void $ fork (runClient client)
+        void $ fork $ do
+            i <- nextClientId
+            liftIO $ putStrLn $ "Client #" ++ show i ++ " has joined."
+            let client = Client i ch
+            modify (\serverState -> serverState { clients = client : clients serverState })
+            runClient client
