@@ -85,6 +85,9 @@ instance MonadIO m => Monad (StateC s m) where
         _runStateC (k a) s'
 
 instance (Functor m, MonadIO m) => MonadState s (StateC s m) where
+    get = StateC $ \tv -> do
+        s <- liftIO $ readTVarIO tv
+        return (s, tv)
     state f = StateC $ \tv -> do
         newval <- liftIO . atomically $ do
             old <- readTVar tv

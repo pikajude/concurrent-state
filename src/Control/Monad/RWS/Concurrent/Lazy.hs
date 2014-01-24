@@ -100,6 +100,9 @@ instance (Monoid w, MonadIO m, MonadWriter w m) => MonadWriter w (RWSC r w s m) 
         return (a, s', tw')
 
 instance (MonadIO m, MonadState s m) => MonadState s (RWSC r w s m) where
+    get = RWSC $ \_ tv w -> do
+        s <- liftIO $ readTVarIO tv
+        return (s, tv, w)
     state f = RWSC $ \_ tv w -> do
         newval <- liftIO . atomically $ do
             old <- readTVar tv
