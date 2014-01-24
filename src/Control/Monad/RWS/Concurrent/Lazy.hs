@@ -107,7 +107,7 @@ instance (MonadIO m, MonadState s m) => MonadState s (RWSC r w s m) where
         newval <- liftIO . atomically $ do
             old <- readTVar tv
             let ~(a, s) = f old
-            swapTVar tv s
+            _ <- swapTVar tv s
             return a
         return (newval, tv, w)
 
