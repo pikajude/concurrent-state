@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 
 -----------------------------------------------------------------------------
@@ -28,7 +29,11 @@ class MonadIO m => MonadFork m where
 
 instance MonadFork IO where
     fork = C.forkIO
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ <= 700
+    forkOn _ = C.forkIO
+#else
     forkOn = C.forkOn
+#endif
     forkOS = C.forkOS
 
 instance MonadFork m => MonadFork (IdentityT m) where
