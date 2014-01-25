@@ -35,6 +35,11 @@ import Control.Monad.RWS
 import Prelude hiding (catch)
 #endif
 
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ <= 702
+(<>) :: Monoid a => a -> a -> a
+(<>) = mappend
+#endif
+
 -- ---------------------------------------------------------------------------
 -- | A concurrent monad transformer reading an environment of type @r@,
 -- collecting output of type @w@ and updating a state of type @s@ to an
