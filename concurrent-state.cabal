@@ -1,7 +1,7 @@
 name:                concurrent-state
-version:             0.5.1.4
+version:             0.6.0.0
 synopsis:            MTL-like library using TVars
-description:         State, RWS backed by TVar.
+description:         Writer, State, RWS backed by TVar
 homepage:            https://github.com/joelteon/concurrent-state
 license:             MIT
 license-file:        LICENSE
@@ -25,6 +25,9 @@ library
                        Control.Monad.RWS.Concurrent
                        Control.Monad.RWS.Concurrent.Lazy
                        Control.Monad.RWS.Concurrent.Strict
+                       Control.Monad.Writer.Concurrent
+                       Control.Monad.Writer.Concurrent.Lazy
+                       Control.Monad.Writer.Concurrent.Strict
   build-depends:       base         >= 4.2 && < 4.8
                      , exceptions   >= 0.3
                      , mtl          >= 2.1

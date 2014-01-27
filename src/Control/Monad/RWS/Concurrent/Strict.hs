@@ -21,12 +21,16 @@ module Control.Monad.RWS.Concurrent.Strict (
     -- *** Running RWSC actions
     runRWSC, evalRWSC, execRWSC, mapRWSC, withRWSC,
 
+    -- *** Running concurrent operations on a single input
+    runRWSCs, evalRWSCs, execRWSCs,
+
     -- *** Lifting other operations
-    liftCallCCC, liftCatch
+    liftCallCC, liftCatch
 ) where
 
 import Control.Applicative
 import Control.Concurrent.Lifted.Fork
+import Control.Concurrent.MVar
 import Control.Concurrent.STM
 import Control.Exception (throwIO)
 import Control.Monad.Catch
@@ -187,8 +191,8 @@ withRWSC f m = RWSC $ \r s w -> uncurry3 (_runRWSC m) (f r s w) where
     uncurry3 q (a,b,c) = q a b c
 
 -- | Uniform lifting of a @callCC@ operation to the new monad.
-liftCallCCC :: ((((a, TVar s, TVar w) -> m (b, TVar s, TVar w)) -> m (a, TVar s, TVar w)) -> m (a, TVar s, TVar w)) -> ((a -> RWSC r w s m b) -> RWSC r w s m a) -> RWSC r w s m a
-liftCallCCC callCC f = RWSC $ \r s w ->
+liftCallCC :: ((((a, TVar s, TVar w) -> m (b, TVar s, TVar w)) -> m (a, TVar s, TVar w)) -> m (a, TVar s, TVar w)) -> ((a -> RWSC r w s m b) -> RWSC r w s m a) -> RWSC r w s m a
+liftCallCC callCC f = RWSC $ \r s w ->
     callCC $ \c ->
         _runRWSC (f (\a -> RWSC $ \_ _ _ -> c (a, s, w))) r s w
 
@@ -196,3 +200,40 @@ liftCallCCC callCC f = RWSC $ \r s w ->
 liftCatch :: (m (a, TVar s, TVar w) -> (e -> m (a, TVar s, TVar w)) -> m (a, TVar s, TVar w)) -> RWSC l w s m a -> (e -> RWSC l w s m a) -> RWSC l w s m a
 liftCatch catchError m h =
     RWSC $ \r s w -> _runRWSC m r s w `catchError` \e -> _runRWSC (h e) r s w
+
+-- | Run multiple RWS operations on the same value, returning the resultant
+-- state, output, and the value produced by each operation.
+runRWSCs :: (MonadFork m, Monoid w)
+         => [RWSC r w s m a] -- ^ RWS computations to execute
+         -> r -- ^ environment
+         -> s -- ^ initial state
+         -> m ([a], s, w) -- ^ return values, final state, and output
+runRWSCs ms r s = do
+    output <- liftIO $ newTVarIO mempty
+    st <- liftIO $ newTVarIO s
+    mvs <- mapM (const (liftIO newEmptyMVar)) ms
+    forM_ (zip mvs ms) $ \(mv, operation) -> fork $ do
+        (res, _, _) <- runRWSC operation r st output
+        liftIO $ putMVar mv res
+    items <- forM mvs (liftIO . takeMVar)
+    end <- liftIO $ readTVarIO st
+    out <- liftIO $ readTVarIO output
+    return (items, end, out)
+
+-- | Run multiple RWS operations on the same value, returning the final
+-- output and the return values of each operation.
+evalRWSCs :: (MonadFork m, Monoid w)
+          => [RWSC r w s m a] -- ^ RWS computations to execute
+          -> r -- ^ environment
+          -> s -- ^ initial state
+          -> m ([a], w) -- ^ return values and output
+evalRWSCs ms r s = liftM (\(a,_,w) -> (a,w)) $ runRWSCs ms r s
+
+-- | Run multiple RWS operations on the same value, returning the final
+-- state and the return values of each operation.
+execRWSCs :: (MonadFork m, Monoid w)
+          => [RWSC r w s m a] -- ^ RWS computations to execute
+          -> r -- ^ environment
+          -> s -- ^ initial state
+          -> m (s, w) -- ^ final state and output
+execRWSCs ms r s = liftM (\(_,s',w) -> (s',w)) $ runRWSCs ms r s

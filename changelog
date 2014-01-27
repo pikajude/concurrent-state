@@ -1,3 +1,8 @@
+0.6.0.0
+-------
+* WriterC
+* Run multiple RWSC operations concurrently (runRWSCs, etc.)
+
 0.5.1.4
 -------
 * GHC 7.7 and 7.2 compatibility

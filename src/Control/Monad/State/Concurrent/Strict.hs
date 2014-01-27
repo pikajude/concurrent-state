@@ -27,7 +27,7 @@ module Control.Monad.State.Concurrent.Strict (
     runStatesC, evalStatesC, execStatesC,
 
     -- *** Lifting other operations
-    liftCallCCC, liftCatchC, liftListenC, liftPassC
+    liftCallCC, liftCatch, liftListen, liftPass
 ) where
 
 import Control.Applicative
@@ -107,7 +107,7 @@ instance MonadIO m => MonadIO (StateC s m) where
 
 instance (MonadIO m, MonadCatch m) => MonadCatch (StateC s m) where
     throwM = liftIO . throwIO
-    catch = liftCatchC catch
+    catch = liftCatch catch
     mask a = StateC $ \tv -> mask $ \u -> _runStateC (a $ q u) tv where
         q u (StateC f) = StateC (u . f)
     uninterruptibleMask a =
@@ -156,29 +156,29 @@ execStateC :: MonadIO m
 execStateC m s = liftM snd $ runStateC m s
 
 -- | Uniform lifting of a @callCC@ operation to the new monad.
-liftCallCCC :: ((((a, TVar s) -> m (b, TVar s)) -> m (a, TVar s)) -> m (a, TVar s)) ->
+liftCallCC :: ((((a, TVar s) -> m (b, TVar s)) -> m (a, TVar s)) -> m (a, TVar s)) ->
     ((a -> StateC s m b) -> StateC s m a) -> StateC s m a
-liftCallCCC callCC f = StateC $ \tv ->
+liftCallCC callCC f = StateC $ \tv ->
     callCC $ \c ->
         _runStateC (f (\a -> StateC $ \_ -> c (a, tv))) tv
 
 -- | Lift a @catchError@ operation to the new monad.
-liftCatchC :: (m (a, TVar s) -> (e -> m (a, TVar s)) -> m (a, TVar s)) ->
+liftCatch :: (m (a, TVar s) -> (e -> m (a, TVar s)) -> m (a, TVar s)) ->
     StateC s m a -> (e -> StateC s m a) -> StateC s m a
-liftCatchC catchError m h =
+liftCatch catchError m h =
     StateC $ \s -> _runStateC m s `catchError` \e -> _runStateC (h e) s
 
 -- | Lift a @listen@ operation to the new monad.
-liftListenC :: Monad m =>
+liftListen :: Monad m =>
     (m (a, TVar s) -> m ((a, TVar s), w)) -> StateC s m a -> StateC s m (a,w)
-liftListenC listen m = StateC $ \tv -> do
+liftListen listen m = StateC $ \tv -> do
     ((a, s'), w) <- listen (_runStateC m tv)
     return ((a, w), s')
 
 -- | Lift a @pass@ operation to the new monad.
-liftPassC :: Monad m =>
+liftPass :: Monad m =>
     (m ((a, TVar s), b) -> m (a, TVar s)) -> StateC s m (a, b) -> StateC s m a
-liftPassC pass m = StateC $ \tv -> pass $ do
+liftPass pass m = StateC $ \tv -> pass $ do
     ((a, f), s') <- _runStateC m tv
     return ((a, s'), f)
 
