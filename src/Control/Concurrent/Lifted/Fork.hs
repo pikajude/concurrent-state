@@ -47,14 +47,14 @@ instance MonadFork m => MonadFork (ReaderT r m) where
     forkOS (ReaderT m) = ReaderT (forkOS . m)
 
 -- | Generalized 'C.forkFinally'.
-forkFinally :: (MonadCatch m, MonadFork m) => m a -> (Either SomeException a -> m ()) -> m C.ThreadId
+forkFinally :: (MonadMask m, MonadCatch m, MonadFork m) => m a -> (Either SomeException a -> m ()) -> m C.ThreadId
 forkFinally action andThen = mask $ \restore ->
     fork $ try (restore action) >>= andThen
 
 -- | Generalized 'C.forkIOWithUnmask'.
-forkWithUnmask :: (MonadCatch m, MonadFork m) => ((forall a. m a -> m a) -> m ()) -> m C.ThreadId
+forkWithUnmask :: (MonadMask m, MonadCatch m, MonadFork m) => ((forall a. m a -> m a) -> m ()) -> m C.ThreadId
 forkWithUnmask = fork . mask
 
 -- | Generalized 'C.forkOnWithUnmask'.
-forkOnWithUnmask :: (MonadCatch m, MonadFork m) => Int -> ((forall a. m a -> m a) -> m ()) -> m C.ThreadId
+forkOnWithUnmask :: (MonadMask m, MonadCatch m, MonadFork m) => Int -> ((forall a. m a -> m a) -> m ()) -> m C.ThreadId
 forkOnWithUnmask i = forkOn i . mask
