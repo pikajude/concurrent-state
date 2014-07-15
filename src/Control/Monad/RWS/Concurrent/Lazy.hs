@@ -121,8 +121,12 @@ instance (MonadIO m, MonadState s m) => MonadState s (RWSC r w s m) where
         return (newval, tv, w)
 
 instance (MonadIO m, MonadCatch m) => MonadCatch (RWSC r w s m) where
-    throwM = liftIO . throwIO
     catch = liftCatch catch
+
+instance (MonadIO m, MonadThrow m) => MonadThrow (RWSC r w s m) where
+    throwM = liftIO . throwIO
+
+instance (MonadIO m, MonadMask m) => MonadMask (RWSC r w s m) where
     mask a = RWSC $ \r s w -> mask $ \u -> _runRWSC (a $ q u) r s w where
         q u (RWSC f) = RWSC (((u .) .) . f)
     uninterruptibleMask a =

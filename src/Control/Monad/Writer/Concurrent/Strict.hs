@@ -105,8 +105,12 @@ instance (Monoid w, MonadIO m) => MonadWriter w (WriterC w m) where
         return (a, tw')
 
 instance (MonadIO m, MonadCatch m) => MonadCatch (WriterC w m) where
-    throwM = liftIO . throwIO
     catch = liftCatch catch
+
+instance (MonadIO m, MonadThrow m) => MonadThrow (WriterC w m) where
+    throwM = liftIO . throwIO
+
+instance (MonadIO m, MonadMask m) => MonadMask (WriterC w m) where
     mask a = WriterC $ \w -> mask $ \u -> _runWriterC (a $ q u) w where
         q u (WriterC f) = WriterC (u . f)
     uninterruptibleMask a =

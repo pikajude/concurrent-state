@@ -106,8 +106,12 @@ instance MonadIO m => MonadIO (StateC s m) where
         return (a, s)
 
 instance (MonadIO m, MonadCatch m) => MonadCatch (StateC s m) where
-    throwM = liftIO . throwIO
     catch = liftCatch catch
+
+instance (MonadIO m, MonadThrow m) => MonadThrow (StateC s m) where    
+    throwM = liftIO . throwIO
+
+instance (MonadIO m, MonadCatch m, MonadMask m) => MonadMask (StateC s m) where    
     mask a = StateC $ \tv -> mask $ \u -> _runStateC (a $ q u) tv where
         q u (StateC f) = StateC (u . f)
     uninterruptibleMask a =
