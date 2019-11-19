@@ -120,14 +120,19 @@ instance (MonadIO m, MonadState s m) => MonadState s (RWSC r w s m) where
             return a
         return (newval, tv, w)
 
-instance (MonadIO m, MonadCatch m) => MonadCatch (RWSC r w s m) where
+instance (MonadIO m, MonadCatch m, MonadThrow m) => MonadThrow (RWSC r w s m) where
     throwM = liftIO . throwIO
-    catch = liftCatch catch
+
+instance (MonadIO m, MonadCatch m, MonadMask m) => MonadMask (RWSC r w s m) where
     mask a = RWSC $ \r s w -> mask $ \u -> _runRWSC (a $ q u) r s w where
         q u (RWSC f) = RWSC (((u .) .) . f)
     uninterruptibleMask a =
         RWSC $ \r s w -> uninterruptibleMask $ \u -> _runRWSC (a $ q u) r s w where
         q u (RWSC f) = RWSC (((u .) .) . f)
+    generalBracket = undefined
+    
+instance (MonadIO m, MonadCatch m) => MonadCatch (RWSC r w s m) where
+    catch = liftCatch catch
 
 instance (Monoid w, MonadIO m, MonadReader r m, MonadWriter w m, MonadState s m) => MonadRWS r w s (RWSC r w s m)
 

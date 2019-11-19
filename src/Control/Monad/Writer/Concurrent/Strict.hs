@@ -103,15 +103,19 @@ instance (Monoid w, MonadIO m) => MonadWriter w (WriterC w m) where
         ((a, f), tw') <- _runWriterC m tw
         liftIO . atomically $ modifyTVar' tw' f
         return (a, tw')
-
-instance (MonadIO m, MonadCatch m) => MonadCatch (WriterC w m) where
+instance (MonadIO m, MonadThrow m) => MonadThrow (WriterC w m) where
     throwM = liftIO . throwIO
-    catch = liftCatch catch
+
+instance (MonadIO m, MonadMask m) => MonadMask (WriterC w m) where
     mask a = WriterC $ \w -> mask $ \u -> _runWriterC (a $ q u) w where
         q u (WriterC f) = WriterC (u . f)
     uninterruptibleMask a =
         WriterC $ \w -> uninterruptibleMask $ \u -> _runWriterC (a $ q u) w where
         q u (WriterC f) = WriterC (u . f)
+    generalBracket = undefined
+    
+instance (MonadIO m, MonadCatch m) => MonadCatch (WriterC w m) where
+    catch = liftCatch catch
 
 instance (Monoid w, MonadFork m) => MonadFork (WriterC w m) where
     fork = liftFork fork
